@@ -1,30 +1,63 @@
 $($(document).ready( function() {
 
-	setInterval(function() {
-		getMsgfromSlack();
-		showTyping();
-	}, 500);
+	// setInterval(function() {
+	// 	//getMsgfromSlack();
+	//
+	// }, 500);
+
+	showTyping();
 
 function showTyping() {
-	$.ajax({
-		url: 'https://slack.com/api/rtm.start',
-		type: "GET",
-		dataType: 'json',
-		data: {token: 'xoxp-2315976778-2315977822-10394561350-ca4652', id: 1, channel: "C0ABS4QNL", type: 'message', text: "hellow world!!"},
-	})
-	.done(function(json) {
-		console.log("success");
-		console.log(json.token);
+	// $.ajax({
+	// 	url: 'https://slack.com/api/rtm.start',
+	// 	type: "GET",
+	// 	dataType: 'json',
+	// 	data: {token: 'xoxp-2315976778-2315977822-10394561350-ca4652', id: 1, channel: "C0ABS4QNL", type: 'message', text: "hellow world!!"},
+	// })
+	// .done(function(json) {
+	// 	console.log("success");
+	// 	console.log();
+	//
+	// })
+	// .fail(function() {
+	// 	console.log("error");
+	// })
+	// .always(function(json) {
+	// 	console.log("always gets here");
+	// });
 
-	})
-	.fail(function() {
-		console.log("error");
-	})
-	.always(function(json) {
-		console.log("always gets here");
-	});
+	$.getJSON('https://slack.com/api/rtm.start',
+	 {token: 'xoxp-2315976778-2315977822-10394561350-ca4652'
+		},
+		function(json, textStatus) {
+			//console.log(json.channels[2].latest.text);
+			//addReceivedMsgtoDOM(json.channels[2].latest.text);
+			var connection = new WebSocket(json.url);
+			connection.onopen = function () {
+				console.log("ws url is  : " + json.url);
+				console.log("web socket connected!!! (i think)");
+				// var msg = {
+				// 	type: "message",
+				// 	id: 1,
+				// 	channel: "C0ABS4QNL",
+				// 	text: "sending a messssaaaage"
+				// };
+				// connection.send(JSON.stringify(msg));
+			};
+			connection.onerror = function (error) {
+		  	console.log('Error Logged: ' + error); //log errors
+			};
+			connection.onmessage = function (e) {
+				console.log(e.data);
+				var parsedData = JSON.parse(e.data);
+				console.log("message text:  " + parsedData.text);
+				if ((parsedData.text !== undefined)&&(parsedData.subtype !== "bot_message")) addReceivedMsgtoDOM(parsedData.text);
+			};
+
+		});
+
+
 }
-
 
 		//commenting out because i already created this channel (using api)
 		// $.getJSON('https://slack.com/api/channels.create',
@@ -55,12 +88,12 @@ function showTyping() {
 		addSentMsgtoDOM(msgContent);
 	});
 
-	$('body').on('click', 'button.refresh', function(event) {
-		event.preventDefault();
-		/* Act on the event */
-		console.log('REFRESH button clicked');
-		getMsgfromSlack();
-	});
+	// $('body').on('click', 'button.refresh', function(event) {
+	// 	event.preventDefault();
+	// 	/* Act on the event */
+	// 	console.log('REFRESH button clicked');
+	// 	getMsgfromSlack();
+	// });
 
 	function addSentMsgtoDOM(msgContent) {
 		var html = "";
