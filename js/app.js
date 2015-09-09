@@ -1,6 +1,30 @@
 $($(document).ready( function() {
 
-	getMsgfromSlack();
+	setInterval(function() {
+		getMsgfromSlack();
+		showTyping();
+	}, 500);
+
+function showTyping() {
+	$.ajax({
+		url: 'https://slack.com/api/rtm.start',
+		type: "GET",
+		dataType: 'json',
+		data: {token: 'xoxp-2315976778-2315977822-10394561350-ca4652', 'type': 'typing'},
+	})
+	.done(function(json) {
+		console.log("success");
+		console.log(json.data);
+
+	})
+	.fail(function() {
+		console.log("error");
+	})
+	.always(function(json) {
+		console.log("always gets here");
+	});
+}
+
 
 		//commenting out because i already created this channel (using api)
 		// $.getJSON('https://slack.com/api/channels.create',
@@ -51,7 +75,6 @@ $($(document).ready( function() {
 	}
 
 	function addMsgtoSlack(msgContent) {
-
 			$.getJSON('https://slack.com/api/chat.postMessage',
 			 {token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
 				channel: "#working-channel",
@@ -64,37 +87,41 @@ $($(document).ready( function() {
 				});
 	}
 
-	function getMsgfromSlack(gotMsg) {
-		$.getJSON('https://slack.com/api/rtm.start',
-		 {token: 'xoxp-2315976778-2315977822-10394561350-ca4652'
-			},
-			function(json, textStatus) {
-				/*optional stuff to do after success */
-				console.log(json.channels[2].latest.text);
-				addReceivedMsgtoDOM(json.channels[2].latest.text);
-				return;
+	var oldLatestMsg = "";
+	function getMsgfromSlack() {
+		// $.getJSON('https://slack.com/api/rtm.start',
+		//  {token: 'xoxp-2315976778-2315977822-10394561350-ca4652'
+		// 	},
+		// 	function(json, textStatus) {
+		// 		/*optional stuff to do after success */
+		// 		console.log(json.channels[2].latest.text);
+		// 		addReceivedMsgtoDOM(json.channels[2].latest.text);
+		// 		return;
+		// 	});
+
+			$.ajax({
+				url: 'https://slack.com/api/rtm.start',
+				type: 'GET',
+				dataType: 'json',
+				data: {token: 'xoxp-2315976778-2315977822-10394561350-ca4652'},
+			})
+			.done(function(json) {
+				var newLatestMsg = json.channels[2].latest.text;
+				if (newLatestMsg !== oldLatestMsg) {
+					addReceivedMsgtoDOM(newLatestMsg);
+					oldLatestMsg = newLatestMsg;
+				}
+				//console.log(json.channels[2]);
+
+
+
+			})
+			.fail(function() {
+
+			})
+			.always(function(json) {
+
 			});
-
-
-			// $.ajax({
-			// 	url: 'https://slack.com/api/rtm.start',
-			// 	type: 'GET',
-			// 	dataType: 'default',
-			// 	data: {token: 'xoxp-2315976778-2315977822-10394561350-ca4652'},
-			// })
-			// .done(function() {
-			// 	console.log("success");
-			// 	console.log(json.channels[2].latest.text);
-			// 	addReceivedMsgtoDOM(json.channels[2].latest.text);
-			//
-			// })
-			// .fail(function() {
-			// 	console.log("error");
-			// })
-			// .always(function() {
-			// 	console.log("always gets here");
-			// });
-
 	}
 
 
