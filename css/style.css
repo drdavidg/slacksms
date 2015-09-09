@@ -8,7 +8,7 @@ background: #B9CEFF;
 -webkit-border-radius: 10px;
 -moz-border-radius: 10px;
 border-radius: 10px;
-margin: 50px;
+margin: 30px;
 }
 
 .bubbleleft:after
@@ -29,13 +29,13 @@ top: 40px;
 position: relative;
 width: 655px;
 height: 120px;
-padding: 18px;
+padding: 0px;
 background: #F3F59A;
 -webkit-border-radius: 10px;
 -moz-border-radius: 10px;
 border-radius: 10px;
 float: right;
-margin: 50px auto;
+margin: 30px auto;
 }
 .bubbleright:after
 {
