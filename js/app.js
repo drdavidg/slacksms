@@ -10,11 +10,11 @@ function showTyping() {
 		url: 'https://slack.com/api/rtm.start',
 		type: "GET",
 		dataType: 'json',
-		data: {token: 'xoxp-2315976778-2315977822-10394561350-ca4652', 'type': 'typing'},
+		data: {token: 'xoxp-2315976778-2315977822-10394561350-ca4652', id: 1, channel: "C0ABS4QNL", type: 'message', text: "hellow world!!"},
 	})
 	.done(function(json) {
 		console.log("success");
-		console.log(json.data);
+		console.log(json.token);
 
 	})
 	.fail(function() {
