@@ -101,10 +101,53 @@ $($(document).ready( function() {
 					/*optional stuff to do after success */
 					console.log('chat should be posted to channel????  ' + channelName);
 			});
+		},
+		sendSMS: function(smsText) { //send out SMS texts using Twilio
+			$.ajax({
+				url: 'https://api.twilio.com/2010-04-01/Accounts/AC4e170477bd4abe4c97d8818f156ea4fb/Messages',
+				type: 'POST',
+				dataType: 'json',
+				headers: {
+					authorization: "Basic QUM0ZTE3MDQ3N2JkNGFiZTRjOTdkODgxOGYxNTZlYTRmYjo3OWVkZTMzM2NiZTc0NTI0MmM1OGVlZDk4Zjg1MGEwMA=="
+				},
+				data: {
+					From: '+13105041517',
+					To: '+13102436474',
+					Body: smsText,
+				}
+			})
+			.done(function() {
+				console.log("twilio success");
+			})
+			.fail(function() {
+				console.log("twilio error");
+			})
+			.always(function() {
+				console.log("twilio complete");
+			});
+
+			// $.post('https://api.twilio.com/2010-04-01/Accounts/AC4e170477bd4abe4c97d8818f156ea4fb/Messages',
+			// {
+			// 	type: 'POST',
+			// 	method: 'POST',
+			// 	headers: {
+			// 		authorization: "Basic QUM0ZTE3MDQ3N2JkNGFiZTRjOTdkODgxOGYxNTZlYTRmYjo3OWVkZTMzM2NiZTc0NTI0MmM1OGVlZDk4Zjg1MGEwMA=="
+			// 	},
+			// 	// dataType: 'json',
+			// 	data: {
+			// 		From: '+13105041517',
+			// 		To: '+13102436474',
+			// 		Body: "test sms message to twilio",
+			// 	}
+			// },
+			// function(json, textStatus) {
+			// 		/*optional stuff to do after success */
+			// });
 		}
 	};
 
 	slackChat.openSocket();
 	slackChat.setSendClick();
+	slackChat.sendSMS();
 
 }));
