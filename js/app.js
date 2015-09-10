@@ -1,6 +1,6 @@
 $($(document).ready( function() {
 
-	var slackSMS = {
+	var slackChat = {
 		currChannel: null,
 		openSocket: function() {
 			$.getJSON('https://slack.com/api/rtm.start',
@@ -29,7 +29,7 @@ $($(document).ready( function() {
 					 //console.log(e.data);
 						var parsedData = JSON.parse(e.data);
 						if ((parsedData.text !== undefined)&&(parsedData.subtype !== "bot_message")&&(parsedData.reply_to === undefined)&&(parsedData.subtype !== "channel_join")) {
-							slackSMS.addReceivedMsgtoDOM(parsedData.text);
+							slackChat.addReceivedMsgtoDOM(parsedData.text);
 						}
 					};
 				});
@@ -42,9 +42,9 @@ $($(document).ready( function() {
 				var msgContent = $('input.msginput').val();
 				var phoneNumber = $('input.phoneinput').val();
 				//console.log(phoneNumber);
-				slackSMS.setChannel(phoneNumber, msgContent);
+				slackChat.setChannel(phoneNumber, msgContent);
 
-				slackSMS.addSentMsgtoDOM(msgContent);
+				slackChat.addSentMsgtoDOM(msgContent);
 			});
 		},
 		addSentMsgtoDOM: function(msgContent) {
@@ -72,12 +72,12 @@ $($(document).ready( function() {
 				//console.log("channelName is: " + channelName + " msgContent is " + msgContent);
 				//console.log(json);
 
-				if (json.ok === true) slackSMS.currChannel = json.channel.id;
-				//else if (json.error === "name_taken") slackSMS.addMsgtoSlack(msgContent, channelName);
+				if (json.ok === true) slackChat.currChannel = json.channel.id;
+				//else if (json.error === "name_taken") slackChat.addMsgtoSlack(msgContent, channelName);
 				else console.log('gots an errorz ' + json.error);
-				console.log("slackSMS.currChannel equals =  " + slackSMS.currChannel);
+				console.log("slackChat.currChannel equals =  " + slackChat.currChannel);
 
-				if (slackSMS.currChannel) slackSMS.addMsgtoSlack(msgContent, slackSMS.currChannel);
+				if (slackChat.currChannel) slackChat.addMsgtoSlack(msgContent, slackChat.currChannel);
 
 			})
 			.fail(function() {
@@ -104,7 +104,7 @@ $($(document).ready( function() {
 		}
 	};
 
-	slackSMS.openSocket();
-	slackSMS.setSendClick();
+	slackChat.openSocket();
+	slackChat.setSendClick();
 
 }));
