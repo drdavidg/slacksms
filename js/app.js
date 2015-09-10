@@ -1,8 +1,14 @@
 $($(document).ready( function() {
 
+	var slackSMS = {
+		openSocket: function() {
 
+		},
+
+	}
 
 	openSocket();
+	setSendClick();
 
 	function openSocket() {
 
@@ -16,40 +22,40 @@ $($(document).ready( function() {
 				connection.onopen = function () {
 					// console.log("ws url is  : " + json.url);
 					// console.log("web socket connected!!! (i think)");
-					// var msg = {
-					// 	type: "message",
-					// 	id: 1,
-					// 	channel: "C0ABS4QNL",
-					// 	text: "sending a messssaaaage"
-					// };
-					// connection.send(JSON.stringify(msg));
+					var msg = {
+						type: "message",
+						channel: "C0ACK7RR7",
+						text: "sending a messssaaaage",
+						user: "U0299URQ6",
+						ts: "1355517523.000005"
+					};
+					connection.send(JSON.stringify(msg));
 				};
 				connection.onerror = function (error) {
 			  	console.log('Error Logged: ' + error); //log errors
 				};
-				connection.onmessage = function (e) {
+				connection.onmessage = function (e) { //message event slack->app
 				 console.log(e.data);
 					var parsedData = JSON.parse(e.data);
-				//	console.log("message text:  " + parsedData.text);
-					//console.log("reply to:  " + parsedData.reply_to);
-					if ((parsedData.text !== undefined)&&(parsedData.subtype !== "bot_message")&&(parsedData.reply_to === undefined)&&(parsedData.subtype !== "channel_join")) addReceivedMsgtoDOM(parsedData.text);
+					if ((parsedData.text !== undefined)&&(parsedData.subtype !== "bot_message")&&(parsedData.reply_to === undefined)&&(parsedData.subtype !== "channel_join")) {
+						addReceivedMsgtoDOM(parsedData.text);
+					}
 				};
-
 			});
-
 	}
 
-	$('div.container').on('click', 'form.msgform button.sendmsgbutton', function(event) {
-		event.preventDefault();
-		/* Act on the event */
-		console.log('button clicked');
-		var msgContent = $('input.msginput').val();
-		var phoneNumber = $('input.phoneinput').val();
-		console.log(phoneNumber);
-		setChannel(msgContent, phoneNumber);
-		addSentMsgtoDOM(msgContent);
-	});
-
+	function setSendClick() {
+		$('div.container').on('click', 'form.msgform button.sendmsgbutton', function(event) {
+			event.preventDefault();
+			/* Act on the event */
+			console.log('button clicked');
+			var msgContent = $('input.msginput').val();
+			var phoneNumber = $('input.phoneinput').val();
+			console.log(phoneNumber);
+			setChannel(msgContent, phoneNumber);
+			addSentMsgtoDOM(msgContent);
+		});
+	}
 
 	function addSentMsgtoDOM(msgContent) {
 		var html = "";
@@ -78,15 +84,14 @@ $($(document).ready( function() {
 		.done(function(json) {
 			console.log("success");
 			console.log("channelName is: " + channelName + " msgContent is " + msgContent);
-			console.log("stringified channelName " + JSON.stringify(channelName));
-			console.log(json.channel.id);
+			console.log(json);
 
-
-			addMsgtoSlack(msgContent, json.channel.id);
+			if (json.ok === true) addMsgtoSlack(msgContent, json.channel.id);
+			else if (json.error === "name_taken") addMsgtoSlack(msgContent, channelName);
+			else console.log('gots an errorz ' + json.error);
 		})
 		.fail(function() {
 			console.log("fail");
-			return false;
 		})
 		.error(function() {
 			/* Act on the event */
@@ -108,43 +113,6 @@ $($(document).ready( function() {
 				console.log('chat should be posted to channel????  ' + channelName);
 		});
 	}
-
-	// var oldLatestMsg = "";
-	// function getMsgfromSlack() {
-	// 	// $.getJSON('https://slack.com/api/rtm.start',
-	// 	//  {token: 'xoxp-2315976778-2315977822-10394561350-ca4652'
-	// 	// 	},
-	// 	// 	function(json, textStatus) {
-	// 	// 		/*optional stuff to do after success */
-	// 	// 		console.log(json.channels[2].latest.text);
-	// 	// 		addReceivedMsgtoDOM(json.channels[2].latest.text);
-	// 	// 		return;
-	// 	// 	});
-	//
-	// 		$.ajax({
-	// 			url: 'https://slack.com/api/rtm.start',
-	// 			type: 'GET',
-	// 			dataType: 'json',
-	// 			data: {token: 'xoxp-2315976778-2315977822-10394561350-ca4652'},
-	// 		})
-	// 		.done(function(json) {
-	// 			var newLatestMsg = json.channels[2].latest.text;
-	// 			if (newLatestMsg !== oldLatestMsg) {
-	// 				addReceivedMsgtoDOM(newLatestMsg);
-	// 				oldLatestMsg = newLatestMsg;
-	// 			}
-	// 			//console.log(json.channels[2]);
-	//
-	//
-	//
-	// 		})
-	// 		.fail(function() {
-	//
-	// 		})
-	// 		.always(function(json) {
-	//
-	// 		});
-	// }
 
 
 }));
