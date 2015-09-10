@@ -30,6 +30,15 @@ $($(document).ready( function() {
 						var parsedData = JSON.parse(e.data);
 						if ((parsedData.text !== undefined)&&(parsedData.subtype !== "bot_message")&&(parsedData.reply_to === undefined)&&(parsedData.subtype !== "channel_join")) {
 							slackChat.addReceivedMsgtoDOM(parsedData.text);
+							$.getJSON('https://slack.com/api/channels.info',
+							{
+								token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
+								channel: parsedData.channel
+							},
+							function(json, textStatus) {
+								slackChat.sendSMS(parsedData.text, json.channel.name);
+							});
+
 						}
 					};
 				});
@@ -102,7 +111,7 @@ $($(document).ready( function() {
 					console.log('chat should be posted to channel????  ' + channelName);
 			});
 		},
-		sendSMS: function(smsText) { //send out SMS texts using Twilio
+		sendSMS: function(smsText, toPhoneNumber) { //send out SMS texts using Twilio
 			$.ajax({
 				url: 'https://api.twilio.com/2010-04-01/Accounts/AC4e170477bd4abe4c97d8818f156ea4fb/Messages',
 				type: 'POST',
@@ -112,7 +121,7 @@ $($(document).ready( function() {
 				},
 				data: {
 					From: '+13105041517',
-					To: '+13102436474',
+					To: toPhoneNumber,
 					Body: smsText,
 				}
 			})
@@ -125,29 +134,17 @@ $($(document).ready( function() {
 			.always(function() {
 				console.log("twilio complete");
 			});
+		},
+		checkLatestSMS: function() {
+			//look through twilio REST API sms history.  somehow see if there is a new one (maybe using length of returned array??)
 
-			// $.post('https://api.twilio.com/2010-04-01/Accounts/AC4e170477bd4abe4c97d8818f156ea4fb/Messages',
-			// {
-			// 	type: 'POST',
-			// 	method: 'POST',
-			// 	headers: {
-			// 		authorization: "Basic QUM0ZTE3MDQ3N2JkNGFiZTRjOTdkODgxOGYxNTZlYTRmYjo3OWVkZTMzM2NiZTc0NTI0MmM1OGVlZDk4Zjg1MGEwMA=="
-			// 	},
-			// 	// dataType: 'json',
-			// 	data: {
-			// 		From: '+13105041517',
-			// 		To: '+13102436474',
-			// 		Body: "test sms message to twilio",
-			// 	}
-			// },
-			// function(json, textStatus) {
-			// 		/*optional stuff to do after success */
-			// });
+
+
 		}
 	};
 
 	slackChat.openSocket();
 	slackChat.setSendClick();
-	slackChat.sendSMS();
+	//slackChat.sendSMS("testing twilio send SMS");
 
 }));
