@@ -147,41 +147,33 @@ $($(document).ready( function() {
 				}
 			})
 			.done(function(jsonTwilio) {
-				//pull latest twilio sms timestampt.  pull latest slack message timestamp.  if twilio sms timestamp > slack message timestamp push twilio sms to slack as message
 
-				console.log(jsonTwilio.messages[0].date_created);
-				console.log()
+			})
+			.fail(function() {
+				console.log("twilio error");
+			})
+			.always(function(jsonTwilio) {
+				console.log("twilio complete");
+				//pull latest twilio sms timestamp.  pull latest slack message timestamp.  if twilio sms timestamp > slack message timestamp push twilio sms to slack as message
 
-				//get latest slack message timestamp
+				//get list of channel messages
+				$.getJSON('https://slack.com/api/channels.history',
+				{
+					token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
+					channel: 'C0ACHM8B1',
+				}, function(jsonSlack, textStatus) {
 
-
-
-
-
-
-				if (slackChat.lastMessageTimeStamp === null) {
-					console.log("time stamp is null hasn't been set yet");
-					slackChat.lastMessageTimeStamp = [jsonTwilio.messages[0].date_created, jsonTwilio.messages[0].sid];
-				}
-				else {
-					for (var key in jsonTwilio.messages) {
-						if (jsonTwilio.messages[key].date_created > slackChat.lastMessageTimeStamp[0]) {
-							console.log("twilio message is later than last posted message to slack");
-						}
-
+					//only pull slack messages from this user (not from the hotel).  and only pull twilio messages sent to the phone number of this channel
+					if ((jsonSlack.messages[0] !== undefined) && ((Math.floor((new Date(jsonTwilio.messages[0].date_created).valueOf())/1000)) > (jsonSlack.messages[0].ts).valueOf())) {
+						console.log("twilioTimeStamp > slackTimeStamp");
+						slackChat.addMsgtoSlack(jsonTwilio.messages[0].body, 'C0ACHM8B1');
 					}
-				}
+					else if (jsonSlack.messages[0] === undefined) {
+						slackChat.addMsgtoSlack(jsonTwilio.messages[0].body, 'C0ACHM8B1');
+					}
 
-				//console.log("twilio success.  below is jsonTwilio.messages");
-				//console.log("channel name: " + json.messages[(json.messages.length-1)].body);
-				//console.log(jsonTwilio.messages);
-				//slackChat.twilioMessages = jsonTwilio.messages;
-				// console.log(slackChat.twilioMessages);
-				// difference = $.grep(jsonTwilio.messages, function(x) {
-				// 	return $.inArray(x, slackChat.twilioMessages) < 0;
-				// });
-				// console.log("difference is : " + difference);
-				// console.log(json.messages.length-1);
+				});
+
 				var msg = jsonTwilio.messages[0].body;
 				var channel = jsonTwilio.messages[0].from;
 				//console.log(channel);
@@ -190,52 +182,16 @@ $($(document).ready( function() {
 				channel = JSON.stringify(channel);
 				//console.log(channel);
 
-				//get list of channel messages
-				$.getJSON('https://slack.com/api/channels.history',
-				{
-					token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
-					channel: 'C0ACHM8B1',
-				}, function(jsonSlack, textStatus) {
-					console.log(jsonSlack);
-						//lets remove objects that aren't type.message and are user: "U0299URQ6" (ie they're sent from slack user not sms user)
-						//store jsonTwilio.messages as property: value in slackChat.  then use it to compare to new jsonTwilio.messages call
-						for (var key in jsonSlack.messages) {
-							//console.log("key: " + key);
-							//console.log("json.messages[key]: ");
-							//console.log(json.messages[key]);
-							if (jsonSlack.messages[key].user === "U0299URQ6")  {
-								//console.log('run, its a slack user message!! delete it!');
-								delete jsonSlack.messages[key];
-							}
-							//console.log("json.messages.hasOwnProperty(key): " + json.messages.hasOwnProperty(key));
-						}
-
-						//console.log(jsonTwilio.messages);
-						//console.log(jsonSlack.messages);
-				});
-
-
 				//get channelID
 				$.getJSON('https://slack.com/api/channels.info',
 				{
 					token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
 					channel: 'C0ACHM8B1',
 				}, function(json, textStatus) {
-						/*optional stuff to do after success */
 						//console.log(json);
 				});
-				//TODO how do i code to get just the latest messages from twilio messages list???
-				//1) could pull message history from slack & twilio and compare and only post the new ones
-				//2) latest datetime of twilio message posted to slack.  poll twilio and check for newer ones.
 
-				//slackChat.setChannel(channel, msg);
-				//slackChat.addMsgtoSlack(msg, "C0ACHM8B1");
-			})
-			.fail(function() {
-				console.log("twilio error");
-			})
-			.always(function(json) {
-				console.log("twilio complete");
+				setInterval(slackChat.checkLatestSMS(), 7000);
 			});
 
 
