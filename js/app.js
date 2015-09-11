@@ -46,11 +46,9 @@ $($(document).ready( function() {
 		setSendClick: function() {
 			$('div.container').on('click', 'form.msgform button.sendmsgbutton', function(event) {
 				event.preventDefault();
-				/* Act on the event */
-				//console.log('button clicked');
 				var msgContent = $('input.msginput').val();
 				var phoneNumber = $('input.phoneinput').val();
-				//console.log(phoneNumber);
+
 				slackChat.setChannel(phoneNumber, msgContent);
 
 				slackChat.addSentMsgtoDOM(msgContent);
@@ -78,12 +76,14 @@ $($(document).ready( function() {
 			})
 			.done(function(json) {
 				console.log("success");
-				//console.log("channelName is: " + channelName + " msgContent is " + msgContent);
-				//console.log(json);
-
+				console.log(json);
 				if (json.ok === true) slackChat.currChannel = json.channel.id;
 				//else if (json.error === "name_taken") slackChat.addMsgtoSlack(msgContent, channelName);
-				else console.log('gots an errorz ' + json.error);
+				else {
+					console.log('gots an errorz ' + json.error);
+					// slackChat.currChannel = json.channel.id;
+					slackChat.addMsgtoSlack(msgContent, slackChat.currChannel);
+				}
 				console.log("slackChat.currChannel equals =  " + slackChat.currChannel);
 
 				if (slackChat.currChannel) slackChat.addMsgtoSlack(msgContent, slackChat.currChannel);
@@ -91,10 +91,6 @@ $($(document).ready( function() {
 			})
 			.fail(function() {
 				console.log("fail");
-			})
-			.error(function() {
-				/* Act on the event */
-				console.log("error");
 			})
 			.always(function() {
 				console.log("complete");
@@ -137,7 +133,49 @@ $($(document).ready( function() {
 		},
 		checkLatestSMS: function() {
 			//look through twilio REST API sms history.  somehow see if there is a new one (maybe using length of returned array??)
+			$.ajax({
+				url: 'https://api.twilio.com/2010-04-01/Accounts/AC4e170477bd4abe4c97d8818f156ea4fb/Messages.json',
+				type: 'GET',
+				dataType: 'json',
+				headers: {
+					authorization: "Basic QUM0ZTE3MDQ3N2JkNGFiZTRjOTdkODgxOGYxNTZlYTRmYjo3OWVkZTMzM2NiZTc0NTI0MmM1OGVlZDk4Zjg1MGEwMA=="
+				},
+				data: {
+					To: "13105041517"
+				}
+			})
+			.done(function(json) {
+				console.log("twilio success");
+				//console.log("channel name: " + json.messages[(json.messages.length-1)].body);
+				console.log(json);
+				console.log(json.messages.length-1);
+				var msg = json.messages[(json.messages.length-1)].body;
+				var channel = json.messages[(json.messages.length-1)].from;
+				console.log(channel);
+				console.log(msg);
+				channel = channel.substr(1);
+				channel = JSON.stringify(channel);
+				console.log(channel);
+				//get channelID
+				$.getJSON('https://slack.com/api/channels.info',
+				{
+					token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
+					channel: '234',
+				}, function(json, textStatus) {
+						/*optional stuff to do after success */
+						console.log(json);
+				});
 
+
+				//slackChat.setChannel(channel, msg);
+				slackChat.addMsgtoSlack(msg, "C0ACHM8B1");
+			})
+			.fail(function() {
+				console.log("twilio error");
+			})
+			.always(function(json) {
+				console.log("twilio complete");
+			});
 
 
 		}
@@ -145,6 +183,7 @@ $($(document).ready( function() {
 
 	slackChat.openSocket();
 	slackChat.setSendClick();
-	//slackChat.sendSMS("testing twilio send SMS");
+
+	slackChat.checkLatestSMS();
 
 }));
