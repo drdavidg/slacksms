@@ -147,25 +147,39 @@ $($(document).ready( function() {
 			.done(function(json) {
 				console.log("twilio success");
 				//console.log("channel name: " + json.messages[(json.messages.length-1)].body);
-				console.log(json);
-				console.log(json.messages.length-1);
-				var msg = json.messages[(json.messages.length-1)].body;
-				var channel = json.messages[(json.messages.length-1)].from;
-				console.log(channel);
-				console.log(msg);
+				console.log(json.messages);
+				// console.log(json.messages.length-1);
+				var msg = json.messages[0].body;
+				var channel = json.messages[0].from;
+				//console.log(channel);
+				//console.log(msg);
 				channel = channel.substr(1);
 				channel = JSON.stringify(channel);
-				console.log(channel);
+				//console.log(channel);
+
+				//get list of channel messages
+				$.getJSON('https://slack.com/api/channels.history',
+				{
+					token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
+					channel: 'C0ACHM8B1',
+				}, function(json, textStatus) {
+						/*optional stuff to do after success */
+						console.log(json);
+						//lets remove objects that aren't type.message and are user: "U0299URQ6" (ie they're sent from slack user not sms user)
+				});
+
+
 				//get channelID
 				$.getJSON('https://slack.com/api/channels.info',
 				{
 					token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
-					channel: '234',
+					channel: '13102436474',
 				}, function(json, textStatus) {
 						/*optional stuff to do after success */
 						console.log(json);
 				});
-
+				//TODO how do i code to get just the latest messages from twilio messages list???
+				//1) could pull message history from slack & twilio and compare and only post the new ones
 
 				//slackChat.setChannel(channel, msg);
 				slackChat.addMsgtoSlack(msg, "C0ACHM8B1");
