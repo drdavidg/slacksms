@@ -2,7 +2,7 @@ $($(document).ready( function() {
 
 	var slackChat = {
 		currChannel: null,
-		twilioMessages: null,
+		lastMessageTimeStamp: [],
 		openSocket: function() {
 			$.getJSON('https://slack.com/api/rtm.start',
 			 {token: 'xoxp-2315976778-2315977822-10394561350-ca4652'
@@ -147,15 +147,40 @@ $($(document).ready( function() {
 				}
 			})
 			.done(function(jsonTwilio) {
-				console.log("twilio success.  below is jsonTwilio.messages");
+				//pull latest twilio sms timestampt.  pull latest slack message timestamp.  if twilio sms timestamp > slack message timestamp push twilio sms to slack as message
+
+				console.log(jsonTwilio.messages[0].date_created);
+				console.log()
+
+				//get latest slack message timestamp
+
+
+
+
+
+
+				if (slackChat.lastMessageTimeStamp === null) {
+					console.log("time stamp is null hasn't been set yet");
+					slackChat.lastMessageTimeStamp = [jsonTwilio.messages[0].date_created, jsonTwilio.messages[0].sid];
+				}
+				else {
+					for (var key in jsonTwilio.messages) {
+						if (jsonTwilio.messages[key].date_created > slackChat.lastMessageTimeStamp[0]) {
+							console.log("twilio message is later than last posted message to slack");
+						}
+
+					}
+				}
+
+				//console.log("twilio success.  below is jsonTwilio.messages");
 				//console.log("channel name: " + json.messages[(json.messages.length-1)].body);
 				//console.log(jsonTwilio.messages);
 				//slackChat.twilioMessages = jsonTwilio.messages;
-				console.log(slackChat.twilioMessages);
-				difference = $.grep(jsonTwilio.messages, function(x) {
-					return $.inArray(x, slackChat.twilioMessages) < 0;
-				});
-				console.log("difference is : " + difference);
+				// console.log(slackChat.twilioMessages);
+				// difference = $.grep(jsonTwilio.messages, function(x) {
+				// 	return $.inArray(x, slackChat.twilioMessages) < 0;
+				// });
+				// console.log("difference is : " + difference);
 				// console.log(json.messages.length-1);
 				var msg = jsonTwilio.messages[0].body;
 				var channel = jsonTwilio.messages[0].from;
@@ -171,6 +196,7 @@ $($(document).ready( function() {
 					token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
 					channel: 'C0ACHM8B1',
 				}, function(jsonSlack, textStatus) {
+					console.log(jsonSlack);
 						//lets remove objects that aren't type.message and are user: "U0299URQ6" (ie they're sent from slack user not sms user)
 						//store jsonTwilio.messages as property: value in slackChat.  then use it to compare to new jsonTwilio.messages call
 						for (var key in jsonSlack.messages) {
@@ -193,13 +219,14 @@ $($(document).ready( function() {
 				$.getJSON('https://slack.com/api/channels.info',
 				{
 					token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
-					channel: '13102436474',
+					channel: 'C0ACHM8B1',
 				}, function(json, textStatus) {
 						/*optional stuff to do after success */
-						console.log(json);
+						//console.log(json);
 				});
 				//TODO how do i code to get just the latest messages from twilio messages list???
 				//1) could pull message history from slack & twilio and compare and only post the new ones
+				//2) latest datetime of twilio message posted to slack.  poll twilio and check for newer ones.
 
 				//slackChat.setChannel(channel, msg);
 				//slackChat.addMsgtoSlack(msg, "C0ACHM8B1");
@@ -218,6 +245,7 @@ $($(document).ready( function() {
 	slackChat.openSocket();
 	slackChat.setSendClick();
 
-	slackChat.checkLatestSMS();
+	setInterval(slackChat.checkLatestSMS(), 2000);
+	//slackChat.checkLatestSMS();
 
 }));
