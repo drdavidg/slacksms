@@ -2,6 +2,7 @@ $($(document).ready( function() {
 
 	var slackChat = {
 		currChannel: null,
+		twilioMessages: null,
 		openSocket: function() {
 			$.getJSON('https://slack.com/api/rtm.start',
 			 {token: 'xoxp-2315976778-2315977822-10394561350-ca4652'
@@ -100,14 +101,15 @@ $($(document).ready( function() {
 			$.getJSON('https://slack.com/api/chat.postMessage', {
 				token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
 				channel: channelName,
-				text: msgContent
+				text: msgContent,
+				username: "Guest103"
 			},
 			function(json, textStatus) {
 					/*optional stuff to do after success */
 					console.log('chat should be posted to channel????  ' + channelName);
 			});
 		},
-		sendSMS: function(smsText, toPhoneNumber) { //send out SMS texts using Twilio
+		sendSMS: function(smsText, toPhoneNumber) { //new Slack message -> send out SMS texts using Twilio
 			$.ajax({
 				url: 'https://api.twilio.com/2010-04-01/Accounts/AC4e170477bd4abe4c97d8818f156ea4fb/Messages',
 				type: 'POST',
@@ -144,13 +146,19 @@ $($(document).ready( function() {
 					To: "13105041517"
 				}
 			})
-			.done(function(json) {
-				console.log("twilio success");
+			.done(function(jsonTwilio) {
+				console.log("twilio success.  below is jsonTwilio.messages");
 				//console.log("channel name: " + json.messages[(json.messages.length-1)].body);
-				console.log(json.messages);
+				//console.log(jsonTwilio.messages);
+				//slackChat.twilioMessages = jsonTwilio.messages;
+				console.log(slackChat.twilioMessages);
+				difference = $.grep(jsonTwilio.messages, function(x) {
+					return $.inArray(x, slackChat.twilioMessages) < 0;
+				});
+				console.log("difference is : " + difference);
 				// console.log(json.messages.length-1);
-				var msg = json.messages[0].body;
-				var channel = json.messages[0].from;
+				var msg = jsonTwilio.messages[0].body;
+				var channel = jsonTwilio.messages[0].from;
 				//console.log(channel);
 				//console.log(msg);
 				channel = channel.substr(1);
@@ -162,10 +170,22 @@ $($(document).ready( function() {
 				{
 					token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
 					channel: 'C0ACHM8B1',
-				}, function(json, textStatus) {
-						/*optional stuff to do after success */
-						console.log(json);
+				}, function(jsonSlack, textStatus) {
 						//lets remove objects that aren't type.message and are user: "U0299URQ6" (ie they're sent from slack user not sms user)
+						//store jsonTwilio.messages as property: value in slackChat.  then use it to compare to new jsonTwilio.messages call
+						for (var key in jsonSlack.messages) {
+							//console.log("key: " + key);
+							//console.log("json.messages[key]: ");
+							//console.log(json.messages[key]);
+							if (jsonSlack.messages[key].user === "U0299URQ6")  {
+								//console.log('run, its a slack user message!! delete it!');
+								delete jsonSlack.messages[key];
+							}
+							//console.log("json.messages.hasOwnProperty(key): " + json.messages.hasOwnProperty(key));
+						}
+
+						//console.log(jsonTwilio.messages);
+						//console.log(jsonSlack.messages);
 				});
 
 
@@ -182,7 +202,7 @@ $($(document).ready( function() {
 				//1) could pull message history from slack & twilio and compare and only post the new ones
 
 				//slackChat.setChannel(channel, msg);
-				slackChat.addMsgtoSlack(msg, "C0ACHM8B1");
+				//slackChat.addMsgtoSlack(msg, "C0ACHM8B1");
 			})
 			.fail(function() {
 				console.log("twilio error");
