@@ -3,7 +3,7 @@ $($(document).ready( function() {
 	var slackChat = {
 		currChannel: null,
 		lastMessageTimeStamp: [],
-		openSocket: function() {
+		openSocket: function() {//this is used to detect messages created in Slack and then send them via Twilio SMS
 			$.getJSON('https://slack.com/api/rtm.start',
 			 {token: 'xoxp-2315976778-2315977822-10394561350-ca4652'
 				},
@@ -137,9 +137,10 @@ $($(document).ready( function() {
 				var channelString = jsonTwilio.messages[0].from;
 				channelString = channelString.substr(1);
 				channelString = JSON.stringify(channelString);
-				console.log(channelString);
+				//console.log(channelString);
 
 				createChannel(channelString);
+
 
 				function createChannel(channelID) {
 					$.getJSON('https://slack.com/api/channels.create',
@@ -147,35 +148,14 @@ $($(document).ready( function() {
 						token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
 						name: channelID,
 					}, function(json, textStatus) {
-						console.log(channelID);
+						console.log(json);
+						console.log("channel ID is:  ");
+						console.log(json.channel.id);
+						compareThenSendtoSlack(json.channel.id);
 					});
 				}
 
-				listAllThenCreateSlackChannel(channelString);
 
-				function listAllThenCreateSlackChannel(channelString) {
-					$.getJSON('https://slack.com/api/channels.list',
-					{
-						token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
-					}, function(json, textStatus) {
-						// console.log("list of all slack channels");
-						// console.log(json.channels);
-
-						for (var key in json.channels) {
-							 //console.log("channelString is " + channelString);
-							// console.log(JSON.stringify(json.channels[key].name));
-							if (JSON.stringify(json.channels[key].name) === channelString) {
-								console.log("bingo!");
-								console.log(json.channels[key].id);
-								createChannel(json.channels[key].name);
-							}
-						}
-
-					});
-				}
-				console.log("channelID is " + channelID);
-
-				compareThenSendtoSlack(channelString);
 
 				function compareThenSendtoSlack(channelString) {
 					//get list of channel messages to compare with twilio records and send message to slack if theres newer ones in twilio
@@ -184,7 +164,7 @@ $($(document).ready( function() {
 						token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
 						channel: channelString,
 					}, function(jsonSlack, textStatus) {
-						console.log(jsonSlack);
+						//console.log(jsonSlack);
 						//only pull slack messages from this user (not from the hotel).  and only pull twilio messages sent to the phone number of this channel
 						if ((jsonSlack.messages[0] !== undefined) && ((Math.floor((new Date(jsonTwilio.messages[0].date_created).valueOf())/1000)) > (jsonSlack.messages[0].ts).valueOf())) {
 							console.log("twilioTimeStamp > slackTimeStamp");
