@@ -44,27 +44,6 @@ $($(document).ready( function() {
 					};
 				});
 		},
-		setSendClick: function() {
-			$('div.container').on('click', 'form.msgform button.sendmsgbutton', function(event) {
-				event.preventDefault();
-				var msgContent = $('input.msginput').val();
-				var phoneNumber = $('input.phoneinput').val();
-
-				slackChat.setChannel(phoneNumber, msgContent);
-
-				slackChat.addSentMsgtoDOM(msgContent);
-			});
-		},
-		addSentMsgtoDOM: function(msgContent) {
-			var html = "";
-			html += "<div class='sentmsg msg pure-g'><div class=pure-u-1-8'></div><div class='pure-u-3-4'><div class='bubbleright'><div class='msgtext'>" + msgContent + "</div></div></div><div class='pure-u-1-8'></div></div>";
-			$(html).appendTo('.chatarea');
-		},
-		addReceivedMsgtoDOM: function(msgContent) {
-			var html = "";
-			html += "<div class='receivedmsg msg pure-g'><div class=pure-u-1-8'></div><div class='pure-u-3-4'><div class='bubbleleft'><div class='msgtext'>" + msgContent + "</div></div></div><div class='pure-u-1-8'></div></div>";
-			$(html).appendTo('.chatarea');
-		},
 		setChannel: function(channelName, msgContent) {
 			$.ajax({
 				url: 'https://slack.com/api/channels.create',
@@ -102,11 +81,10 @@ $($(document).ready( function() {
 				token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
 				channel: channelName,
 				text: msgContent,
-				username: "Guest103"
+				username: "Guest103" //TODO need to un-hardcode this
 			},
 			function(json, textStatus) {
-					/*optional stuff to do after success */
-					console.log('chat should be posted to channel????  ' + channelName);
+					console.log('chat should be posted to Slack channel????  ' + channelName);
 			});
 		},
 		sendSMS: function(smsText, toPhoneNumber) { //new Slack message -> send out SMS texts using Twilio
@@ -156,52 +134,101 @@ $($(document).ready( function() {
 				console.log("twilio complete");
 				//pull latest twilio sms timestamp.  pull latest slack message timestamp.  if twilio sms timestamp > slack message timestamp push twilio sms to slack as message
 
-				//get list of channel messages
-				$.getJSON('https://slack.com/api/channels.history',
-				{
-					token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
-					channel: 'C0ACHM8B1',
-				}, function(jsonSlack, textStatus) {
+				var channelString = jsonTwilio.messages[0].from;
+				channelString = channelString.substr(1);
+				channelString = JSON.stringify(channelString);
+				console.log(channelString);
 
-					//only pull slack messages from this user (not from the hotel).  and only pull twilio messages sent to the phone number of this channel
-					if ((jsonSlack.messages[0] !== undefined) && ((Math.floor((new Date(jsonTwilio.messages[0].date_created).valueOf())/1000)) > (jsonSlack.messages[0].ts).valueOf())) {
-						console.log("twilioTimeStamp > slackTimeStamp");
-						slackChat.addMsgtoSlack(jsonTwilio.messages[0].body, 'C0ACHM8B1');
-					}
-					else if (jsonSlack.messages[0] === undefined) {
-						slackChat.addMsgtoSlack(jsonTwilio.messages[0].body, 'C0ACHM8B1');
-					}
+				createChannel(channelString);
 
-				});
+				function createChannel(channelID) {
+					$.getJSON('https://slack.com/api/channels.create',
+					{
+						token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
+						name: channelID,
+					}, function(json, textStatus) {
+						console.log(channelID);
+					});
+				}
 
-				var msg = jsonTwilio.messages[0].body;
-				var channel = jsonTwilio.messages[0].from;
-				//console.log(channel);
-				//console.log(msg);
-				channel = channel.substr(1);
-				channel = JSON.stringify(channel);
-				//console.log(channel);
+				listAllThenCreateSlackChannel(channelString);
 
-				//get channelID
-				$.getJSON('https://slack.com/api/channels.info',
-				{
-					token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
-					channel: 'C0ACHM8B1',
-				}, function(json, textStatus) {
-						//console.log(json);
-				});
+				function listAllThenCreateSlackChannel(channelString) {
+					$.getJSON('https://slack.com/api/channels.list',
+					{
+						token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
+					}, function(json, textStatus) {
+						// console.log("list of all slack channels");
+						// console.log(json.channels);
 
-				setInterval(slackChat.checkLatestSMS(), 7000);
+						for (var key in json.channels) {
+							 //console.log("channelString is " + channelString);
+							// console.log(JSON.stringify(json.channels[key].name));
+							if (JSON.stringify(json.channels[key].name) === channelString) {
+								console.log("bingo!");
+								console.log(json.channels[key].id);
+								createChannel(json.channels[key].name);
+							}
+						}
+
+					});
+				}
+				console.log("channelID is " + channelID);
+
+				compareThenSendtoSlack(channelString);
+
+				function compareThenSendtoSlack(channelString) {
+					//get list of channel messages to compare with twilio records and send message to slack if theres newer ones in twilio
+					$.getJSON('https://slack.com/api/channels.history',
+					{
+						token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
+						channel: channelString,
+					}, function(jsonSlack, textStatus) {
+						console.log(jsonSlack);
+						//only pull slack messages from this user (not from the hotel).  and only pull twilio messages sent to the phone number of this channel
+						if ((jsonSlack.messages[0] !== undefined) && ((Math.floor((new Date(jsonTwilio.messages[0].date_created).valueOf())/1000)) > (jsonSlack.messages[0].ts).valueOf())) {
+							console.log("twilioTimeStamp > slackTimeStamp");
+							slackChat.addMsgtoSlack(jsonTwilio.messages[0].body, channelString);
+						}
+						else if (jsonSlack.messages[0] === undefined) {
+							slackChat.addMsgtoSlack(jsonTwilio.messages[0].body, channelString);
+						}
+					});
+				}
+
+
+				//turning this off for now by commenting out
+				//setInterval(slackChat.checkLatestSMS(), 7000);
 			});
 
 
-		}
+		},
+		setSendClick: function() {//acts on click of Send Button in DOM
+			$('div.container').on('click', 'form.msgform button.sendmsgbutton', function(event) {
+				event.preventDefault();
+				var msgContent = $('input.msginput').val();
+				var phoneNumber = $('input.phoneinput').val();
+
+				slackChat.setChannel(phoneNumber, msgContent);
+
+				slackChat.addSentMsgtoDOM(msgContent);
+			});
+		},
+		addSentMsgtoDOM: function(msgContent) {
+			var html = "";
+			html += "<div class='sentmsg msg pure-g'><div class=pure-u-1-8'></div><div class='pure-u-3-4'><div class='bubbleright'><div class='msgtext'>" + msgContent + "</div></div></div><div class='pure-u-1-8'></div></div>";
+			$(html).appendTo('.chatarea');
+		},
+		addReceivedMsgtoDOM: function(msgContent) {
+			var html = "";
+			html += "<div class='receivedmsg msg pure-g'><div class=pure-u-1-8'></div><div class='pure-u-3-4'><div class='bubbleleft'><div class='msgtext'>" + msgContent + "</div></div></div><div class='pure-u-1-8'></div></div>";
+			$(html).appendTo('.chatarea');
+		},
 	};
 
 	slackChat.openSocket();
 	slackChat.setSendClick();
 
 	setInterval(slackChat.checkLatestSMS(), 2000);
-	//slackChat.checkLatestSMS();
 
 }));
