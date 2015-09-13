@@ -2,27 +2,18 @@ $($(document).ready( function() {
 
 	var slackChat = {
 		openSocket: function() {//this is used to detect messages created in Slack and then send them via Twilio SMS
+			slackChat.connectionDeferred = new $.Deferred();
 			$.getJSON('https://slack.com/api/rtm.start',
 			 {token: 'xoxp-2315976778-2315977822-10394561350-ca4652'
 				},
 				function(json, textStatus) {
-					//console.log(json.channels[2].latest.text);
-					//addReceivedMsgtoDOM(json.channels[2].latest.text);
 					var connection = slackChat.connection = new WebSocket(json.url);
 					connection.onopen = function () {
-						// console.log("ws url is  : " + json.url);
-						// console.log("web socket connected!!! (i think)");
-						var msg = {//TODO sending messages to Slack now works using websockets.
-							type: "message",
-							channel: "C0ACHM8B1",
-							text: "sending a messssaaaage",
-							user: "GuestBot",
-							ts: "1355517523.000005"
-						};
-						//connection.send(JSON.stringify(msg));
+						slackChat.connectionDeferred.resolve();
 					};
 					connection.onerror = function (error) {
 				  //	console.log('Error Logged: ' + error); //log errors
+						slackChat.connectionDeferred.reject();
 					};
 					connection.onmessage = function (e) { //message event slack->app
 					 //console.log(e.data);
@@ -37,7 +28,6 @@ $($(document).ready( function() {
 							function(json, textStatus) {
 								slackChat.sendSMS(parsedData.text, json.channel.name);
 							});
-
 						}
 					};
 				});
@@ -51,17 +41,12 @@ $($(document).ready( function() {
 				ts: "1355517523.000005"
 			};
 			console.log('msg should be added to slack using websocket');
-			slackChat.connection.send(JSON.stringify(msg));
 
-			// $.getJSON('https://slack.com/api/chat.postMessage', {
-			// 	token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
-			// 	channel: channelName,
-			// 	text: msgContent,
-			// 	username: "Guest103" //TODO need to un-hardcode this
-			// },
-			// function(json, textStatus) {
-			// 		console.log('chat should be posted to Slack channel????  ' + channelName);
-			// });
+			function sendtoSlack() {
+				slackChat.connection.send(JSON.stringify(msg));
+			}
+			if (slackChat.connectionDeferred.status()==="resolved") sendtoSlack();
+			else slackChat.connectionDeferred.done(sendtoSlack);
 		},
 		sendSMS: function(smsText, toPhoneNumber) { //new Slack message -> send out SMS texts using Twilio
 			$.ajax({
@@ -129,7 +114,7 @@ $($(document).ready( function() {
 						console.log("createChannel success");
 						console.log(json.ok);
 						if (!json.ok) {
-							
+
 						}
 					})
 					.fail(function() {
@@ -141,20 +126,7 @@ $($(document).ready( function() {
 					.always(function() {
 						console.log("createChannel complete");
 					});
-
-					// $.getJSON('https://slack.com/api/channels.create',
-					// {
-					// 	token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
-					// 	name: channelID,
-					// }, function(json, textStatus) {
-					// 	console.log(json);
-					// 	console.log("channel ID is:  ");
-					// 	console.log(json.channel.id);
-					// 	compareThenSendtoSlack(json.channel.id);
-					// 	//callback(json.channel.id);
-					// });
 				}
-
 
 				function compareThenSendtoSlack(channelString) {
 					//get list of channel messages to compare with twilio records and send message to slack if theres newer ones in twilio
@@ -175,8 +147,6 @@ $($(document).ready( function() {
 					});
 				}
 
-				//turning this off for now by commenting out
-				//setTimeout(slackChat.checkLatestSMS(), 7000);
 			});
 
 
@@ -186,5 +156,4 @@ $($(document).ready( function() {
 	slackChat.openSocket();
 
 	setInterval(slackChat.checkLatestSMS, 2000);
-
 }));
