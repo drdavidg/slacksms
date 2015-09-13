@@ -1,8 +1,6 @@
 $($(document).ready( function() {
 
 	var slackChat = {
-		currChannel: null,
-		lastMessageTimeStamp: [],
 		openSocket: function() {//this is used to detect messages created in Slack and then send them via Twilio SMS
 			$.getJSON('https://slack.com/api/rtm.start',
 			 {token: 'xoxp-2315976778-2315977822-10394561350-ca4652'
@@ -10,15 +8,15 @@ $($(document).ready( function() {
 				function(json, textStatus) {
 					//console.log(json.channels[2].latest.text);
 					//addReceivedMsgtoDOM(json.channels[2].latest.text);
-					var connection = new WebSocket(json.url);
+					var connection = slackChat.connection = new WebSocket(json.url);
 					connection.onopen = function () {
 						// console.log("ws url is  : " + json.url);
 						// console.log("web socket connected!!! (i think)");
-						var msg = {
+						var msg = {//TODO sending messages to Slack now works using websockets.
 							type: "message",
-							channel: "C0ACK7RR7",
+							channel: "C0ACHM8B1",
 							text: "sending a messssaaaage",
-							user: "U0299URQ6",
+							user: "GuestBot",
 							ts: "1355517523.000005"
 						};
 						//connection.send(JSON.stringify(msg));
@@ -44,48 +42,26 @@ $($(document).ready( function() {
 					};
 				});
 		},
-		setChannel: function(channelName, msgContent) {
-			$.ajax({
-				url: 'https://slack.com/api/channels.create',
-				type: 'GET',
-				dataType: 'json',
-				data: {
-					token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
-					name: channelName,
-					scope: "admin"}
-			})
-			.done(function(json) {
-				console.log("success");
-				console.log(json);
-				if (json.ok === true) slackChat.currChannel = json.channel.id;
-				//else if (json.error === "name_taken") slackChat.addMsgtoSlack(msgContent, channelName);
-				else {
-					console.log('gots an errorz ' + json.error);
-					// slackChat.currChannel = json.channel.id;
-					slackChat.addMsgtoSlack(msgContent, slackChat.currChannel);
-				}
-				console.log("slackChat.currChannel equals =  " + slackChat.currChannel);
-
-				if (slackChat.currChannel) slackChat.addMsgtoSlack(msgContent, slackChat.currChannel);
-
-			})
-			.fail(function() {
-				console.log("fail");
-			})
-			.always(function() {
-				console.log("complete");
-			});
-		},
 		addMsgtoSlack: function(msgContent, channelName) {
-			$.getJSON('https://slack.com/api/chat.postMessage', {
-				token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
+			var msg = {//TODO sending messages to Slack now works using websockets.  add sending using websockets in this function
+				type: "message",
 				channel: channelName,
 				text: msgContent,
-				username: "Guest103" //TODO need to un-hardcode this
-			},
-			function(json, textStatus) {
-					console.log('chat should be posted to Slack channel????  ' + channelName);
-			});
+				user: "GuestBot",
+				ts: "1355517523.000005"
+			};
+			console.log('msg should be added to slack using websocket');
+			slackChat.connection.send(JSON.stringify(msg));
+
+			// $.getJSON('https://slack.com/api/chat.postMessage', {
+			// 	token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
+			// 	channel: channelName,
+			// 	text: msgContent,
+			// 	username: "Guest103" //TODO need to un-hardcode this
+			// },
+			// function(json, textStatus) {
+			// 		console.log('chat should be posted to Slack channel????  ' + channelName);
+			// });
 		},
 		sendSMS: function(smsText, toPhoneNumber) { //new Slack message -> send out SMS texts using Twilio
 			$.ajax({
@@ -139,22 +115,45 @@ $($(document).ready( function() {
 				channelString = JSON.stringify(channelString);
 				//console.log(channelString);
 
-				createChannel(channelString);
+				//createChannel(channelString);
+				createChannel(channelString, compareThenSendtoSlack);
 
-
-				function createChannel(channelID) {
-					$.getJSON('https://slack.com/api/channels.create',
-					{
-						token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
-						name: channelID,
-					}, function(json, textStatus) {
-						console.log(json);
-						console.log("channel ID is:  ");
-						console.log(json.channel.id);
-						compareThenSendtoSlack(json.channel.id);
+				function createChannel(channelID, callback) {
+					$.ajax({
+						url: 'https://slack.com/api/channels.create',
+						type: 'GET',
+						dataType: 'json',
+						data: {token: "xoxp-2315976778-2315977822-10394561350-ca4652", name: channelID}
+					})
+					.done(function(json) {
+						console.log("createChannel success");
+						console.log(json.ok);
+						if (!json.ok) {
+							
+						}
+					})
+					.fail(function() {
+						console.log("createChannel fail");
+					})
+					.error(function() {
+						console.log("error in createChannel");
+					})
+					.always(function() {
+						console.log("createChannel complete");
 					});
-				}
 
+					// $.getJSON('https://slack.com/api/channels.create',
+					// {
+					// 	token: 'xoxp-2315976778-2315977822-10394561350-ca4652',
+					// 	name: channelID,
+					// }, function(json, textStatus) {
+					// 	console.log(json);
+					// 	console.log("channel ID is:  ");
+					// 	console.log(json.channel.id);
+					// 	compareThenSendtoSlack(json.channel.id);
+					// 	//callback(json.channel.id);
+					// });
+				}
 
 
 				function compareThenSendtoSlack(channelString) {
@@ -176,39 +175,16 @@ $($(document).ready( function() {
 					});
 				}
 
-
 				//turning this off for now by commenting out
-				//setInterval(slackChat.checkLatestSMS(), 7000);
+				//setTimeout(slackChat.checkLatestSMS(), 7000);
 			});
 
 
-		},
-		setSendClick: function() {//acts on click of Send Button in DOM
-			$('div.container').on('click', 'form.msgform button.sendmsgbutton', function(event) {
-				event.preventDefault();
-				var msgContent = $('input.msginput').val();
-				var phoneNumber = $('input.phoneinput').val();
-
-				slackChat.setChannel(phoneNumber, msgContent);
-
-				slackChat.addSentMsgtoDOM(msgContent);
-			});
-		},
-		addSentMsgtoDOM: function(msgContent) {
-			var html = "";
-			html += "<div class='sentmsg msg pure-g'><div class=pure-u-1-8'></div><div class='pure-u-3-4'><div class='bubbleright'><div class='msgtext'>" + msgContent + "</div></div></div><div class='pure-u-1-8'></div></div>";
-			$(html).appendTo('.chatarea');
-		},
-		addReceivedMsgtoDOM: function(msgContent) {
-			var html = "";
-			html += "<div class='receivedmsg msg pure-g'><div class=pure-u-1-8'></div><div class='pure-u-3-4'><div class='bubbleleft'><div class='msgtext'>" + msgContent + "</div></div></div><div class='pure-u-1-8'></div></div>";
-			$(html).appendTo('.chatarea');
-		},
+		}
 	};
 
 	slackChat.openSocket();
-	slackChat.setSendClick();
 
-	setInterval(slackChat.checkLatestSMS(), 2000);
+	setInterval(slackChat.checkLatestSMS, 2000);
 
 }));
